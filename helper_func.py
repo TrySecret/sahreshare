@@ -9,6 +9,19 @@ from pyrogram.enums import ChatMemberStatus
 from config import FORCE_SUB_CHANNEL, ADMINS, AUTO_DELETE_TIME, AUTO_DEL_SUCCESS_MSG
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
+
+client = AsyncIOMotorClient(os.getenv("DATABASE_URL"))
+db = client.get_database(os.getenv("DATABASE_NAME", "filebot"))
+vip_col = db["vip_users"]
+
+async def add_vip_user(user_id: int):
+    await vip_col.update_one({"_id": user_id}, {"$set": {"vip": True}}, upsert=True)
+
+async def is_vip(user_id: int) -> bool:
+    doc = await vip_col.find_one({"_id": user_id})
+    return bool(doc and doc.get("vip"))
 
 async def is_subscribed(filter, client, update):
     if not FORCE_SUB_CHANNEL:
