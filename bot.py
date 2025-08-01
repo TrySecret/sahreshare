@@ -11,6 +11,39 @@ from datetime import datetime
 
 from config import API_HASH, APP_ID, LOGGER, TG_BOT_TOKEN, TG_BOT_WORKERS, FORCE_SUB_CHANNEL, CHANNEL_ID, PORT
 
+ from helper_func import is_vip, add_vip_user
+ import os
+ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+ @Client.on_message(filters.command("start") & filters.private)
+ async def start_handler(client, message):
+     keyboard = InlineKeyboardMarkup([[
+-        InlineKeyboardButton("Donasi", url="https://trakteer.id/username")
++        InlineKeyboardButton("💸 Donasi via Trakteer", url=os.getenv("TRAKTEER_URL"))
+     ]])
+     await message.reply(os.getenv("START_MESSAGE", "Halo! Silakan donasi dulu untuk akses VIP."), reply_markup=keyboard)
+
++ @Client.on_message(filters.command("verify") & filters.private)
++ async def manual_verify(client, message):
++     await add_vip_user(message.from_user.id)
++     await message.reply("✅ Verifikasi manual berhasil! Kamu sekarang VIP.")
+
+ @Client.on_message(filters.command("getfile") & filters.private)
+ async def send_file(client, message):
+     uid = message.from_user.id
++    if not await is_vip(uid):
++        keyboard = InlineKeyboardMarkup([[
++            InlineKeyboardButton("💸 Donasi via Trakteer", url=os.getenv("TRAKTEER_URL"))
++        ]])
++        return await message.reply("🚫 Akses hanya untuk VIP. Silakan donasi dulu.", reply_markup=keyboard)
+     file_id = "YOUR_FILE_ID"
+-    await client.send_document(message.chat.id, file_id)
++    await client.send_document(
++        chat_id=message.chat.id,
++        document=file_id,
++        caption="📄 File VIP kamu",
++        protect_content=True
++    )
 
 ascii_art = """
 ░█████╗░░█████╗░██████╗░███████╗██╗░░██╗██████╗░░█████╗░████████╗███████╗
